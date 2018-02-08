@@ -4,7 +4,7 @@ flags.DEFINE_string('dir_prefix', 'E:\\Dropbox\\Code\\FMNIST-Git\\data\\', 'dire
 flags.DEFINE_string('save_dir', '.\\output', 'directory where model graph and weights are saved')
 flags.DEFINE_float('test_train_ratio', 0.85, 'train/raw_data ratio')
 flags.DEFINE_float('vali_train_ratio', 0.9, 'vali/org_train ratio')
-flags.DEFINE_float('REG_COEFF', 0.1, 'regularization coefficient')
+flags.DEFINE_float('REG_COEFF', 0.001, 'regularization coefficient')
 flags.DEFINE_integer('batch_size', 32, '')
 flags.DEFINE_integer('max_epoch_num', 100, '')
 flags.DEFINE_integer('patience', 2, '')
@@ -34,10 +34,10 @@ train_images, train_labels, vali_images, vali_labels = \
 images = labels = None
 
 
-
 if __name__ == '__main__':
     imgplot = plt.imshow(test_images[0].reshape((28, 28)))
     plt.show()
+
     x = tf.placeholder(tf.float32, [None, 784], name='data_placeholder')
     xx = tf.nn.l2_normalize(x, [0, 1])
     output = layers_bundle(xx)
@@ -96,12 +96,22 @@ if __name__ == '__main__':
 
             # report validation loss
             ce_vals = []
+            conf_mxs = []
             for i in range(vali_num_examples // batch_size):
                 batch_xs = vali_images[i * batch_size:(i + 1) * batch_size, :]
                 batch_ys = vali_labels[i * batch_size:(i + 1) * batch_size, :]
-                validation_ce = session.run(mean_total_loss, {x: batch_xs, y: batch_ys})
-
+                validation_ce, vali_conf_matrix = session.run([mean_total_loss, confusion_matrix_op], {x: batch_xs, y: batch_ys})
                 ce_vals.append(validation_ce)
+                conf_mxs.append(vali_conf_matrix)
+            conf_mxs = sum(conf_mxs)
+            count_wrong = 0
+            count_sum =0
+            for i in range(conf_mxs.shape[0]):
+                for j in range(conf_mxs.shape[1]):
+                    count_sum += conf_mxs[i][j]
+                    if i!=j:
+                        count_wrong += conf_mxs[i][j]
+            print("VALIDATION CORRECT RATIO: ", 1-count_wrong*1.0/count_sum)
             avg_test_ce = sum(ce_vals) / len(ce_vals)
             validation_val.append(avg_test_ce)
             print('VALIDATION CROSS ENTROPY: ' + str(avg_test_ce))

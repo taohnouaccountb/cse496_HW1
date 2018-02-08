@@ -26,7 +26,7 @@ def layers_bundle(input_tensor):
         normal_layers = i_regular_dense_layers(input_tensor, [
             {'size': 512, 'k_reg': l2(scale=1.0), 'b_reg': l2(scale=1.0), 'func': relu, 'name': 'hidden1_layer'},
             {'size': 128, 'k_reg': l2(scale=1.0), 'b_reg': l2(scale=1.0), 'func': relu, 'name': 'hidden2_layer'},
-            {'size': 10, 'k_reg': l2(scale=1.0), 'b_reg': l2(scale=1.0), 'func': relu, 'name': 'output_layer'}
+            {'size': 10, 'k_reg': l2(scale=1.0), 'b_reg': l2(scale=1.0), 'func': None, 'name': 'output_layer'}
         ], name_scope='core_model')
         tf.identity(normal_layers, name='model_output')
         return normal_layers
