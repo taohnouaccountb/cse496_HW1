@@ -11,7 +11,6 @@ def random_split_data(data, label, proportion):
     """
     assert data.shape[0] == label.shape[0]
     size = data.shape[0]
-    np.random.seed(666)
     s = np.random.permutation(size)
     split_idx = int(proportion * size)
     return data[s[:split_idx]], label[s[:split_idx]], data[s[split_idx:]], label[s[split_idx:]]

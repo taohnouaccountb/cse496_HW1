@@ -1,11 +1,6 @@
-from tool import *
-from model import *
-
-import os
-
-# Hyperparameters
+import tensorflow as tf
 flags = tf.app.flags
-flags.DEFINE_string('dir_prefix', 'E:\\Dropbox\\Code\\FMNIST\\data\\', 'directory where MNIST is located')
+flags.DEFINE_string('dir_prefix', 'E:\\Dropbox\\Code\\FMNIST-Git\\data\\', 'directory where MNIST is located')
 flags.DEFINE_string('save_dir', '.\\output', 'directory where model graph and weights are saved')
 flags.DEFINE_float('test_train_ratio', 0.85, 'train/raw_data ratio')
 flags.DEFINE_float('vali_train_ratio', 0.9, 'vali/org_train ratio')
@@ -16,9 +11,18 @@ flags.DEFINE_integer('patience', 2, '')
 flags.DEFINE_integer('random_seed', 62, '')
 FLAGS = flags.FLAGS
 
+from tool import *
+from model import *
+import matplotlib.pyplot as plt
+
+
+import os
+
+# Hyperparameters
+
 # Load data
 images = np.load(FLAGS.dir_prefix + 'fmnist_train_data.npy')
-images = np.reshape(images, [-1, 28, 28, 1])
+images = np.reshape(images, [-1, 784])
 labels = np.load(FLAGS.dir_prefix + 'fmnist_train_labels.npy')
 labels = np.array([[(1.0 if i == j else 0.0) for j in range(10)] for i in labels], dtype='float32')
 
@@ -30,9 +34,13 @@ train_images, train_labels, vali_images, vali_labels = \
 images = labels = None
 
 
+
 if __name__ == '__main__':
-    x = tf.placeholder(tf.float32, [None, 28, 28, 1], name='data_placeholder')
-    output = layers_bundle(x)
+    imgplot = plt.imshow(test_images[0].reshape((28, 28)))
+    plt.show()
+    x = tf.placeholder(tf.float32, [None, 784], name='data_placeholder')
+    xx = tf.nn.l2_normalize(x, [0, 1])
+    output = layers_bundle(xx)
     y = tf.placeholder(tf.float32, [None, 10], name='label')
     cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=y, logits=output)
     confusion_matrix_op = tf.confusion_matrix(tf.argmax(y, axis=1), tf.argmax(output, axis=1), num_classes=10)
@@ -47,5 +55,69 @@ if __name__ == '__main__':
 
     with tf.Session() as session:
         session.run(tf.global_variables_initializer())
-        path_prefix = saver.save(session, os.path.join(FLAGS.save_dir,
-                                                       "fmnist_inference"), global_step=global_step_tensor)
+
+        validation_val = []
+        validation_count = 0
+        batch_size = FLAGS.batch_size
+        mean_total_loss = tf.reduce_mean(total_loss)
+
+        train_num_examples = train_images.shape[0]
+        test_num_examples = test_images.shape[0]
+        vali_num_examples = vali_images.shape[0]
+        early_pos = []
+        for epoch in range(FLAGS.max_epoch_num):
+            print('')
+            print('Epoch: ' + str(epoch))
+
+            # run gradient steps and report mean loss on train data
+            ce_vals = []
+            for i in range(train_num_examples // batch_size):
+                batch_xs = train_images[i * batch_size:(i + 1) * batch_size, :]
+                batch_ys = train_labels[i * batch_size:(i + 1) * batch_size, :]
+                _, train_ce= session.run([train_op, mean_total_loss], {x: batch_xs, y: batch_ys})
+                ce_vals.append(train_ce)
+            avg_train_ce = sum(ce_vals) / len(ce_vals)
+            print('TRAIN CROSS ENTROPY: ' + str(avg_train_ce))
+
+            # report mean test loss
+            ce_vals = []
+            conf_mxs = []
+            for i in range(test_num_examples // batch_size):
+                batch_xs = test_images[i * batch_size:(i + 1) * batch_size, :]
+                batch_ys = test_labels[i * batch_size:(i + 1) * batch_size, :]
+                test_ce, conf_matrix = session.run([mean_total_loss, confusion_matrix_op], {x: batch_xs, y: batch_ys})
+
+                ce_vals.append(test_ce)
+                conf_mxs.append(conf_matrix)
+            avg_test_ce = sum(ce_vals) / len(ce_vals)
+            print('TEST CROSS ENTROPY: ' + str(avg_test_ce))
+            print('TEST CONFUSION MATRIX:')
+            print(str(sum(conf_mxs)))
+
+            # report validation loss
+            ce_vals = []
+            for i in range(vali_num_examples // batch_size):
+                batch_xs = vali_images[i * batch_size:(i + 1) * batch_size, :]
+                batch_ys = vali_labels[i * batch_size:(i + 1) * batch_size, :]
+                validation_ce = session.run(mean_total_loss, {x: batch_xs, y: batch_ys})
+
+                ce_vals.append(validation_ce)
+            avg_test_ce = sum(ce_vals) / len(ce_vals)
+            validation_val.append(avg_test_ce)
+            print('VALIDATION CROSS ENTROPY: ' + str(avg_test_ce))
+            if len(validation_val) >= 2 and validation_val[-1] > validation_val[-2]:
+                validation_count = validation_count + 1
+            else:
+                validation_count = 0
+            if validation_count >= FLAGS.patience:
+                early_pos.append(epoch)
+                print('Early Stop!!')
+
+        print('EARLY_POS')
+        print(early_pos)
+        vali_mat = [[i, validation_val[i]] for i in range(len(validation_val))]
+        print('VALI_VAL_MATRIX:')
+        for i in vali_mat:
+            print(i)
+        path_prefix = saver.save(session, os.path.join(FLAGS.save_dir, "mnist_inference"),
+                                 global_step=global_step_tensor)

@@ -3,6 +3,36 @@ import numpy as np
 from functools import reduce
 
 
+def i_regular_dense_layers(input_tensor,
+                          layers_meta,
+                          name_scope='layers_block'):
+    with tf.name_scope(name_scope) as scope:
+        layers = [input_tensor, ]
+        for i in layers_meta:
+            cur_layer = tf.layers.Dense(i['size'],
+                                        kernel_regularizer=i['k_reg'],
+                                        bias_regularizer=i['b_reg'],
+                                        activation=i['func'],
+                                        name=i['name'])
+            layers.append(cur_layer)
+        layers_group = reduce(lambda lhs, rhs: rhs(lhs), layers)
+        return layers_group
+
+
+def layers_bundle(input_tensor):
+    l2 = tf.contrib.layers.l2_regularizer
+    relu = tf.nn.relu
+    with tf.name_scope('v1_model') as scope:
+        normal_layers = i_regular_dense_layers(input_tensor, [
+            {'size': 512, 'k_reg': l2(scale=1.0), 'b_reg': l2(scale=1.0), 'func': relu, 'name': 'hidden1_layer'},
+            {'size': 128, 'k_reg': l2(scale=1.0), 'b_reg': l2(scale=1.0), 'func': relu, 'name': 'hidden2_layer'},
+            {'size': 10, 'k_reg': l2(scale=1.0), 'b_reg': l2(scale=1.0), 'func': relu, 'name': 'output_layer'}
+        ], name_scope='core_model')
+        tf.identity(normal_layers, name='model_output')
+        return normal_layers
+
+
+'''
 def i_regular_conv_layer(input_tensor,
                          num_filters,
                          activation_type,
@@ -28,12 +58,4 @@ def i_regular_conv_layer(input_tensor,
         block_parameter_num = sum(map(lambda layer: layer.count_params(), conv_layers[1:]))+pool.count_params()
         print('Number of parameters in normal conv block: ', block_parameter_num)
         return output_tensor
-
-
-def layers_bundle(input_tensor):
-    with tf.name_scope('yt_model') as scope:
-        conv_layers = i_regular_conv_layer(input_tensor, [64, 128], tf.nn.relu, pool_size=2, pool_strides=2, name='yt_core_model')
-        flat = tf.reshape(conv_layers, [-1, 14*14*128])
-        output = tf.layers.dense(flat, 10, name='output')
-        tf.identity(output, name='model_output')
-        return output
+'''
