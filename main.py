@@ -6,8 +6,8 @@ flags.DEFINE_float('test_train_ratio', 0.85, 'train/raw_data ratio')
 flags.DEFINE_float('vali_train_ratio', 0.9, 'vali/org_train ratio')
 flags.DEFINE_float('REG_COEFF', 0.001, 'regularization coefficient')
 flags.DEFINE_integer('batch_size', 32, '')
-flags.DEFINE_integer('max_epoch_num', 100, '')
-flags.DEFINE_integer('patience', 2, '')
+flags.DEFINE_integer('max_epoch_num', 300, '')
+flags.DEFINE_integer('patience', 6, '')
 flags.DEFINE_integer('random_seed', 62, '')
 FLAGS = flags.FLAGS
 
@@ -26,6 +26,7 @@ images = np.reshape(images, [-1, 784])
 labels = np.load(FLAGS.dir_prefix + 'fmnist_train_labels.npy')
 labels = np.array([[(1.0 if i == j else 0.0) for j in range(10)] for i in labels], dtype='float32')
 
+
 # Split data
 train_images, train_labels, test_images, test_labels = \
     random_split_data(images, labels, FLAGS.test_train_ratio)
@@ -38,7 +39,8 @@ if __name__ == '__main__':
     imgplot = plt.imshow(test_images[0].reshape((28, 28)))
     plt.show()
 
-    x = tf.placeholder(tf.float32, [None, 784], name='data_placeholder')
+    input_placeholder = tf.placeholder(tf.float32, [None, 784], name='data_placeholder')
+    x = input_placeholder
     xx = tf.nn.l2_normalize(x, [0, 1])
     output = layers_bundle(xx)
     y = tf.placeholder(tf.float32, [None, 10], name='label')
@@ -74,7 +76,7 @@ if __name__ == '__main__':
             for i in range(train_num_examples // batch_size):
                 batch_xs = train_images[i * batch_size:(i + 1) * batch_size, :]
                 batch_ys = train_labels[i * batch_size:(i + 1) * batch_size, :]
-                _, train_ce= session.run([train_op, mean_total_loss], {x: batch_xs, y: batch_ys})
+                _, train_ce = session.run([train_op, mean_total_loss], {x: batch_xs, y: batch_ys})
                 ce_vals.append(train_ce)
             avg_train_ce = sum(ce_vals) / len(ce_vals)
             print('TRAIN CROSS ENTROPY: ' + str(avg_train_ce))
@@ -122,6 +124,8 @@ if __name__ == '__main__':
             if validation_count >= FLAGS.patience:
                 early_pos.append(epoch)
                 print('Early Stop!!')
+                break
+
 
         print('EARLY_POS')
         print(early_pos)
@@ -129,5 +133,5 @@ if __name__ == '__main__':
         print('VALI_VAL_MATRIX:')
         for i in vali_mat:
             print(i)
-        path_prefix = saver.save(session, os.path.join(FLAGS.save_dir, "mnist_inference"),
+        path_prefix = saver.save(session, os.path.join(FLAGS.save_dir, "homework_1-0"),
                                  global_step=global_step_tensor)
