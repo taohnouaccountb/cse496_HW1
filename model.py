@@ -4,8 +4,8 @@ from functools import reduce
 
 
 def i_regular_dense_layers(input_tensor,
-                          layers_meta,
-                          name_scope='layers_block'):
+                           layers_meta,
+                           name_scope='layers_block'):
     with tf.name_scope(name_scope) as scope:
         layers = [input_tensor, ]
         for i in layers_meta:
@@ -23,19 +23,19 @@ def i_regular_dense_layers(input_tensor,
         return layers_group
 
 
-def layers_bundle(input_tensor):
+def layers_bundle(input_tensor, name='output'):
     l2 = tf.contrib.layers.l2_regularizer
     relu = tf.nn.relu
     with tf.name_scope('v1_model') as scope:
         normal_layers = i_regular_dense_layers(input_tensor, [
-            {'type': 'dense', 'size': 512, 'k_reg': l2(scale=1.0), 'b_reg': l2(scale=1.0), 'func': relu, 'name': 'hidden1_layer'},
+            {'type': 'dense', 'size': 640, 'k_reg': l2(scale=1.0), 'b_reg': l2(scale=1.0), 'func': relu, 'name': 'hidden1_layer'},
             {'type': 'drop', 'rate': 0.5, 'name': 'dropout_1'},
-            {'type': 'dense', 'size': 64, 'k_reg': l2(scale=1.0), 'b_reg': l2(scale=1.0), 'func': relu, 'name': 'hidden2_layer'},
-            # {'type': 'drop', 'rate': 0.5, 'name': 'dropout_2'},
+            {'type': 'dense', 'size': 100, 'k_reg': l2(scale=1.0), 'b_reg': l2(scale=1.0), 'func': relu, 'name': 'hidden2_layer'},
+            {'type': 'drop', 'rate': 0.5, 'name': 'dropout_2'},
             {'type': 'dense', 'size': 10, 'k_reg': l2(scale=1.0), 'b_reg': l2(scale=1.0), 'func': None, 'name': 'output_layer'}
         ], name_scope='core_model')
-        tf.identity(normal_layers, name='model_output')
-        return normal_layers
+    ret = tf.identity(normal_layers, name=name)
+    return ret
 
 
 '''
