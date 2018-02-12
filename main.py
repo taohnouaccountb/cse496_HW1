@@ -11,7 +11,7 @@ flags.DEFINE_float('test_train_ratio', 0.85, 'train/raw_data ratio')
 flags.DEFINE_float('vali_train_ratio', 0.85, 'vali/org_train ratio')
 flags.DEFINE_float('REG_COEFF', 0.001, 'regularization coefficient')
 flags.DEFINE_integer('batch_size', 32, '')
-flags.DEFINE_integer('max_epoch_num', 100, '')
+flags.DEFINE_integer('max_epoch_num', 50, '')
 flags.DEFINE_integer('patience', 4, '')
 flags.DEFINE_integer('random_seed', 62, '')
 FLAGS = flags.FLAGS
@@ -50,10 +50,14 @@ if __name__ == '__main__':
     train_op = optimizer.minimize(total_loss, global_step=global_step_tensor)
     saver = tf.train.Saver()
 
-    with tf.Session() as session:
+    config = tf.ConfigProto()
+    config.gpu_options.per_process_gpu_memory_fraction = 0.2
+
+    with tf.Session(config=config) as session:
         session.run(tf.global_variables_initializer())
 
         validation_val = []
+        train_val = []
         validation_count = 0
         batch_size = FLAGS.batch_size
         mean_total_loss = tf.reduce_mean(total_loss)
@@ -75,6 +79,7 @@ if __name__ == '__main__':
                 ce_vals.append(train_ce)
             avg_train_ce = sum(ce_vals) / len(ce_vals)
             print('TRAIN CROSS ENTROPY: ' + str(avg_train_ce))
+            train_val.append(avg_train_ce)
 
             # report mean test loss
             ce_vals = []
@@ -120,7 +125,8 @@ if __name__ == '__main__':
                 early_pos.append(epoch)
                 print('Early Stop!!')
                 break
-            if test_ratio > 0.88:
+            test_ratio_peak = 0.88
+            if test_ratio > test_ratio_peak:
                 file_name = "homework_1-0_{ep}_{rate}_{rate2}".format(ep=epoch,
                                                                       rate=int(test_ratio * 100),
                                                                       rate2=int(test_ratio * 10000 % 100))
@@ -131,7 +137,12 @@ if __name__ == '__main__':
         x = range(len(validation_val))
         y = validation_val
         plt.plot(x, y, '-', label='validation_loss')
+        x = range(len(train_val))
+        y = train_val
+        plt.plot(x, y, '-', label='train_loss')
         plt.legend()
+        plt.show()
+
         print('EARLY_POS')
         print(early_pos)
         vali_mat = [[i, validation_val[i]] for i in range(len(validation_val))]
