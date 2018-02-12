@@ -29,9 +29,9 @@ def layers_bundle(input_tensor, name='output'):
     with tf.name_scope('v1_model') as scope:
         layers_meta = [
             {'type': 'drop', 'rate': 0.5, 'name': 'dropout_1'},
-            {'type': 'dense', 'size': 640, 'k_reg': l2(scale=1.0), 'b_reg': l2(scale=1.0), 'func': relu, 'name': 'hidden_layer_0'},
+            {'type': 'dense', 'size': 750, 'k_reg': l2(scale=1.0), 'b_reg': l2(scale=1.0), 'func': relu, 'name': 'hidden_layer_0'},
             {'type': 'drop', 'rate': 0.5, 'name': 'dropout_1'},
-            {'type': 'dense', 'size': 64, 'k_reg': l2(scale=1.0), 'b_reg': l2(scale=1.0), 'func': relu, 'name': 'hidden_layer_1'},
+            {'type': 'dense', 'size': 100, 'k_reg': l2(scale=1.0), 'b_reg': l2(scale=1.0), 'func': relu, 'name': 'hidden_layer_1'},
             {'type': 'drop', 'rate': 0.5, 'name': 'dropout_2'},
             {'type': 'dense', 'size': 10, 'k_reg': l2(scale=1.0), 'b_reg': l2(scale=1.0), 'func': None, 'name': 'output_layer'}
         ]

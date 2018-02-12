@@ -7,8 +7,8 @@ import os
 flags = tf.app.flags
 flags.DEFINE_string('dir_prefix', 'E:\\Dropbox\\Code\\FMNIST-Git\\data\\', 'directory where MNIST is located')
 flags.DEFINE_string('save_dir', '.\\output', 'directory where model graph and weights are saved')
-flags.DEFINE_float('test_train_ratio', 0.85, 'train/raw_data ratio')
-flags.DEFINE_float('vali_train_ratio', 0.85, 'vali/org_train ratio')
+flags.DEFINE_float('test_train_ratio', 0.90, 'train/raw_data ratio')
+flags.DEFINE_float('vali_train_ratio', 0.95, 'vali/org_train ratio')
 flags.DEFINE_float('REG_COEFF', 0.001, 'regularization coefficient')
 flags.DEFINE_integer('batch_size', 32, '')
 flags.DEFINE_integer('max_epoch_num', 50, '')
@@ -127,6 +127,7 @@ if __name__ == '__main__':
                 break
             test_ratio_peak = 0.88
             if test_ratio > test_ratio_peak:
+                test_ratio_peak=test_ratio
                 file_name = "homework_1-0_{ep}_{rate}_{rate2}".format(ep=epoch,
                                                                       rate=int(test_ratio * 100),
                                                                       rate2=int(test_ratio * 10000 % 100))
